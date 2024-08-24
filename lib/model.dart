@@ -1,4 +1,9 @@
-import 'dart:convert';
+
+
+import 'package:hive_flutter/adapters.dart';
+part 'model.g.dart';
+
+
 
 // Define the Access class
 class Access {
@@ -25,16 +30,26 @@ class Access {
   }
 }
 
-// Define the StockWithAccess class
+
+@HiveType(typeId: 0)
 class StockWithAccess {
+  @HiveField(0)
   final String symbol;
+  @HiveField(2)
   final String name;
+    @HiveField(3)
   final String currency;
+    @HiveField(4)
   final String exchange;
+    @HiveField(5)
   final String micCode;
+    @HiveField(6)
   final String country;
+    @HiveField(7)
   final String type;
+    @HiveField(8)
   final String figiCode;
+    @HiveField(9)
   final Access? access;
 
   StockWithAccess({
@@ -78,7 +93,6 @@ class StockWithAccess {
   }
 }
 
-// Define the StockResponse class
 class StockResponse {
   final List<StockWithAccess> data;
   final String status;
