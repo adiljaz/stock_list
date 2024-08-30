@@ -9,6 +9,7 @@ class HomeController extends GetxController {
   final searchResults = <Stock>[].obs;
   final savedStocks = <Stock>[].obs;
   final isLoading = false.obs;
+  final isSearching = false.obs;  // Added this line
 
   @override
   void onInit() {
@@ -17,12 +18,13 @@ class HomeController extends GetxController {
   }
 
   void searchSymbols(String query) async {
-    if (query.isEmpty) return; 
-
+    if (query.isEmpty) return;
+    
     isLoading.value = true;
-   
+    isSearching.value = true;  // Added this line
+    
     final url = 'https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=$query&apikey=$apiKey';
-
+    
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
@@ -38,6 +40,11 @@ class HomeController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  void cancelSearch() {  // Added this method
+    isSearching.value = false;
+    searchResults.clear();
   }
 
   void addToSavedStocks(Stock stock) async {
@@ -63,7 +70,8 @@ class HomeController extends GetxController {
 
   Future<void> saveStocksToHive() async {
     final box = await Hive.openBox<Stock>('stocks');
+    
     await box.clear();
     await box.addAll(savedStocks);
   }
-}
+}  

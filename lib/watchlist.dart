@@ -20,11 +20,11 @@ class AllStocksPage extends StatelessWidget {
             columns: [
               DataColumn(label: Text('Name', style: TextStyle(fontWeight: FontWeight.bold))),
               DataColumn(label: Text('Price', style: TextStyle(fontWeight: FontWeight.bold))),
-              DataColumn(label: Text('Delete', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold))),
             ],
             rows: homeController.savedStocks.map((stock) => DataRow(
               cells: [
-                DataCell(Text(stock.name)), 
+                DataCell(Text(stock.name)),
                 DataCell(Text('\$${stock.price}')),
                 DataCell(
                   IconButton(

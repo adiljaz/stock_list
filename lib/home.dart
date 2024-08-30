@@ -26,7 +26,7 @@ class HomePage extends StatelessWidget {
                 bottomRight: Radius.circular(30),
               ),
             ),
-            child: TextField(
+            child: Obx(() => TextField(
               controller: textController,
               style: TextStyle(color: Colors.white),
               decoration: InputDecoration(
@@ -44,36 +44,77 @@ class HomePage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide(color: Colors.white, width: 2),
                 ),
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.search, color: Colors.white),
-                  onPressed: () {
-                    homeController.searchSymbols(textController.text);
-                  },
-                ),
+                suffixIcon: homeController.isSearching.value
+                    ? IconButton(
+                        icon: Icon(Icons.cancel, color: Colors.white),
+                        onPressed: () {
+                          homeController.cancelSearch();
+                          textController.clear();
+                        },
+                      )
+                    : IconButton(
+                        icon: Icon(Icons.search, color: Colors.white),
+                        onPressed: () {
+                          homeController.searchSymbols(textController.text);
+                        },
+                      ),
               ),
               onSubmitted: (value) {
                 homeController.searchSymbols(value);
               },
-            ),
+            )),
           ),
           Expanded(
             child: Obx(() {
               if (homeController.isLoading.value) {
                 return Center(child: CircularProgressIndicator());
               } else {
-                List<Stock> stocksToDisplay = homeController.searchResults.isEmpty
-                    ? homeController.savedStocks
-                    : homeController.searchResults;
-                return ListView.builder(
-                  itemCount: stocksToDisplay.length,
-                  itemBuilder: (context, index) {
-                    var stock = stocksToDisplay[index];
-                    return StockCard(
-                      stock: stock,
-                      onAdd: () => homeController.addToSavedStocks(stock),
-                      isInWatchlist: homeController.savedStocks.contains(stock),
-                    );
-                  },
+                return Column(
+                  children: [
+                    if (homeController.isSearching.value)
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: homeController.searchResults.length,
+                          itemBuilder: (context, index) {
+                            var stock = homeController.searchResults[index];
+                            return StockCard(
+                              stock: stock,
+                              onAdd: () => homeController.addToSavedStocks(stock),
+                              isInWatchlist: homeController.savedStocks.contains(stock),
+                            );
+                          },
+                        ),
+                      ),
+                    if (!homeController.isSearching.value || homeController.savedStocks.isNotEmpty)
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Text(
+                                'Your Stocks',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            Expanded(
+                              child: ListView.builder(
+                                itemCount: homeController.savedStocks.length,
+                                itemBuilder: (context, index) {
+                                  var stock = homeController.savedStocks[index];
+                                  return StockCard(
+                                    stock: stock,
+                                    onAdd: () {}, // Already in watchlist
+                                    isInWatchlist: true,
+                                    onRemove: () => homeController.removeStock(index),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 );
               }
             }),
@@ -87,12 +128,14 @@ class HomePage extends StatelessWidget {
 class StockCard extends StatelessWidget {
   final Stock stock;
   final VoidCallback onAdd;
+  final VoidCallback? onRemove;
   final bool isInWatchlist;
 
   const StockCard({
     Key? key,
     required this.stock,
     required this.onAdd,
+    this.onRemove,
     required this.isInWatchlist,
   }) : super(key: key);
 
@@ -121,19 +164,31 @@ class StockCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: 10),
-            ElevatedButton(
-              child: Text(isInWatchlist ? 'Added' : 'Add', style: TextStyle(color: Colors.white)),
-              onPressed: isInWatchlist ? null : onAdd,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isInWatchlist ? Colors.grey : Colors.blue[800],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+            if (isInWatchlist && onRemove != null)
+              ElevatedButton(
+                child: Text('Remove', style: TextStyle(color: Colors.white)),
+                onPressed: onRemove,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              )
+            else
+              ElevatedButton(
+                child: Text(isInWatchlist ? 'Added' : 'Add', style: TextStyle(color: Colors.white)),
+                onPressed: isInWatchlist ? null : onAdd,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isInWatchlist ? Colors.grey : Colors.blue[800],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
-} 
+}  
