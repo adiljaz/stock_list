@@ -33,17 +33,18 @@ class _WatchListState extends State<WatchList> {
 
   Future<void> _fetchLatestPrice(StockWithAccess stock) async {
     final apiKey = 'YOUR_ALPHAVANTAGE_API_KEY'; // Replace with your API key
-    final url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=$apiKey';
+    final url =
+        'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=$apiKey';
 
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final price = data['Global Quote']['05. price']; 
+        final price = data['Global Quote']['05. price'];
         if (price != null) {
           // stock.price = price; // Assuming you've added a 'price' field to StockWithAccess
           await watchlistBox.put(stock.symbol, stock);
-        }     
+        }
       }
     } catch (e) {
       print('Error fetching price for ${stock.symbol}: $e');
@@ -57,10 +58,6 @@ class _WatchListState extends State<WatchList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Watchlist'),
-        backgroundColor: Colors.blue[800],
-      ),
       body: ValueListenableBuilder(
         valueListenable: watchlistBox.listenable(),
         builder: (context, Box<StockWithAccess> box, _) {
@@ -84,23 +81,24 @@ class _WatchListState extends State<WatchList> {
                       children: [
                         _buildTableHeader('Company'),
                         _buildTableHeader('Price'),
-                      
                       ],
                     ),
-                    ...box.values.map((stock) => TableRow(
-                      children: [
-                        _buildTableCell(stock.name),
-                        _buildTableCell(stock.symbol?? 'N/A'), 
-                      ],
-                    )).toList(),
+                    ...box.values
+                        .map((stock) => TableRow(
+                              children: [
+                                _buildTableCell(stock.name),
+                                _buildTableCell(stock.symbol ?? 'N/A'),
+                              ],
+                            ))
+                        .toList(),
                   ],
                 ),
               ),
             ],
-          ); 
+          );
         },
       ),
-    ); 
+    );
   }
 
   Widget _buildTableHeader(String text) {
@@ -117,10 +115,12 @@ class _WatchListState extends State<WatchList> {
   Widget _buildTableCell(dynamic content) {
     return Padding(
       padding: const EdgeInsets.all(8.0),
-      child: content is Widget ? content : Text(
-        content.toString(),
-        textAlign: TextAlign.center,
-      ),
+      child: content is Widget
+          ? content
+          : Text(
+              content.toString(),
+              textAlign: TextAlign.center,
+            ),
     );
   }
-} 
+}

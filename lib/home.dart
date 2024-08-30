@@ -1,4 +1,3 @@
-// home.dart
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -18,9 +17,10 @@ class _HomeState extends State<Home> {
   late Future<List<StockWithAccess>> _futureStockResponse;
   final TextEditingController _searchController = TextEditingController();
   late Box<StockWithAccess> watchlistBox;
+  int _currentIndex = 0;
 
-  @override
-  void initState() {
+  @override 
+  void initState() { 
     super.initState();
     _futureStockResponse = fetchStockData();
     openWatchlistBox();
@@ -41,12 +41,12 @@ class _HomeState extends State<Home> {
       final jsonResponse = jsonDecode(response.body);
       print('API Response: $jsonResponse'); // Debug print
 
-      if (jsonResponse['data'] is List) {
-        return List<StockWithAccess>.from(
-            jsonResponse['data'].map((item) => StockWithAccess.fromJson(item)));
+      if (jsonResponse['data'] != null && jsonResponse['data'] is List) {
+        return (jsonResponse['data'] as List)
+            .map((item) => StockWithAccess.fromJson(item)) 
+            .toList();
       } else if (jsonResponse is List) {
-        return List<StockWithAccess>.from(
-            jsonResponse.map((item) => StockWithAccess.fromJson(item)));
+        return jsonResponse.map((item) => StockWithAccess.fromJson(item)).toList();
       } else {
         throw Exception('Unexpected data format');
       }
@@ -66,83 +66,106 @@ class _HomeState extends State<Home> {
     );
   }
 
+  void _handleSearch(String query) {
+    setState(() {
+      _futureStockResponse = fetchStockData(query: query);
+    });
+  }
+
+  Widget _buildHomeContent() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search stocks...',
+              suffixIcon: IconButton(
+                icon: Icon(Icons.search),
+                onPressed: () => _handleSearch(_searchController.text),
+              ),
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: _handleSearch,
+          ),
+        ),
+        Expanded(
+          child: FutureBuilder<List<StockWithAccess>>(
+            future: _futureStockResponse,
+            builder: (BuildContext context, AsyncSnapshot<List<StockWithAccess>> snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Center(child: Text('No stocks found'));
+              }
+
+              return ListView.builder(
+                itemCount: snapshot.data!.length,
+                itemBuilder: (context, index) {
+                  final stock = snapshot.data![index];
+                  return Card(
+                    margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    child: ListTile(
+                      title: Text(
+                        stock.name,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                     
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            stock.symbol,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          IconButton(
+                            icon: Icon(Icons.add_circle_outline),
+                            onPressed: () => _addToWatchlist(stock),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Stock Market'),
+        title: Text(_currentIndex == 0 ? 'Stock Market' : 'Watchlist'),
         centerTitle: true,
         backgroundColor: Colors.blue[800],
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: FutureBuilder<List<StockWithAccess>>(
-              future: _futureStockResponse,
-              builder: (BuildContext context,
-                  AsyncSnapshot<List<StockWithAccess>> snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                return ListView.builder(
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    final stock = snapshot.data![index];
-                    return Card(
-                      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      child: ListTile(
-                        title: Text(
-                          stock.name,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              stock.symbol ,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            ),
-                            SizedBox(width: 10),
-                            IconButton(
-                              icon: Icon(Icons.add_circle_outline),
-                              onPressed: () => _addToWatchlist(stock),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+      body: _currentIndex == 0 ? _buildHomeContent() : WatchList(),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.blue[800],
+        currentIndex: _currentIndex,
+        backgroundColor: Colors.blue[800], 
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.blue[200],
         items: [
           BottomNavigationBarItem(
               icon: Icon(Icons.show_chart), label: 'Market'),
           BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Watchlist'),
-         
         ],
         onTap: (index) {
-          if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => WatchList()),
-            );
-          }
+          setState(() {
+            _currentIndex = index;
+          });
         },
       ),
     );

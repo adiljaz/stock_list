@@ -45,5 +45,5 @@ class StockWithAccess {
       country: json['country'] ?? '',
       type: json['type'] ?? '',
     );
-  }
+  } 
 }
