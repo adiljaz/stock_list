@@ -1,173 +1,139 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:hive/hive.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'watchlist.dart';
-import 'model.dart';
+import 'package:get/get.dart';
+import 'package:stock_list/getex.dart';
+import 'package:stock_list/model.dart';
 
-class Home extends StatefulWidget {
-  const Home({Key? key}) : super(key: key);
-
-  @override
-  _HomeState createState() => _HomeState();
-}
-
-class _HomeState extends State<Home> {
-  late Future<List<StockWithAccess>> _futureStockResponse;
-  final TextEditingController _searchController = TextEditingController();
-  late Box<StockWithAccess> watchlistBox;
-  int _currentIndex = 0;
-
-  @override 
-  void initState() { 
-    super.initState();
-    _futureStockResponse = fetchStockData();
-    openWatchlistBox();
-  }
-
-  Future<List<StockWithAccess>> fetchStockData({String? query}) async {
-    final Uri uri;
-    if (query != null && query.isNotEmpty) {
-      uri = Uri.parse(
-          'https://api.twelvedata.com/symbol_search?symbol=$query&show_plan=true');
-    } else {
-      uri = Uri.parse('https://api.twelvedata.com/stocks?source=docs');
-    }
-
-    final response = await http.get(uri);
-
-    if (response.statusCode == 200) {
-      final jsonResponse = jsonDecode(response.body);
-      print('API Response: $jsonResponse'); // Debug print
-
-      if (jsonResponse['data'] != null && jsonResponse['data'] is List) {
-        return (jsonResponse['data'] as List)
-            .map((item) => StockWithAccess.fromJson(item)) 
-            .toList();
-      } else if (jsonResponse is List) {
-        return jsonResponse.map((item) => StockWithAccess.fromJson(item)).toList();
-      } else {
-        throw Exception('Unexpected data format');
-      }
-    } else {
-      throw Exception('Failed to load stock data');
-    }
-  }
-
-  Future<void> openWatchlistBox() async {
-    watchlistBox = await Hive.openBox<StockWithAccess>('watchlist');
-  }
-
-  void _addToWatchlist(StockWithAccess stock) async {
-    await watchlistBox.put(stock.symbol, stock);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${stock.name} added to watchlist')),
-    );
-  }
-
-  void _handleSearch(String query) {
-    setState(() {
-      _futureStockResponse = fetchStockData(query: query);
-    });
-  }
-
-  Widget _buildHomeContent() {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'Search stocks...',
-              suffixIcon: IconButton(
-                icon: Icon(Icons.search),
-                onPressed: () => _handleSearch(_searchController.text),
-              ),
-              border: OutlineInputBorder(),
-            ),
-            onSubmitted: _handleSearch,
-          ),
-        ),
-        Expanded(
-          child: FutureBuilder<List<StockWithAccess>>(
-            future: _futureStockResponse,
-            builder: (BuildContext context, AsyncSnapshot<List<StockWithAccess>> snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(child: Text('No stocks found'));
-              }
-
-              return ListView.builder(
-                itemCount: snapshot.data!.length,
-                itemBuilder: (context, index) {
-                  final stock = snapshot.data![index];
-                  return Card(
-                    margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    child: ListTile(
-                      title: Text(
-                        stock.name,
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                     
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            stock.symbol,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          IconButton(
-                            icon: Icon(Icons.add_circle_outline),
-                            onPressed: () => _addToWatchlist(stock),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
+class HomePage extends StatelessWidget {
+  final HomeController homeController = Get.put(HomeController());
+  final TextEditingController textController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentIndex == 0 ? 'Stock Market' : 'Watchlist'),
-        centerTitle: true,
+        title: Text('Stock Search', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue[800],
         elevation: 0,
       ),
-      body: _currentIndex == 0 ? _buildHomeContent() : WatchList(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        backgroundColor: Colors.blue[800], 
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.blue[200],
-        items: [
-          BottomNavigationBarItem(
-              icon: Icon(Icons.show_chart), label: 'Market'),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Watchlist'),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Colors.blue[800],
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+            child: TextField(
+              controller: textController,
+              style: TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                labelText: 'Search for a stock',
+                labelStyle: TextStyle(color: Colors.white70),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.white),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.white),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide(color: Colors.white, width: 2),
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(Icons.search, color: Colors.white),
+                  onPressed: () {
+                    homeController.searchSymbols(textController.text);
+                  },
+                ),
+              ),
+              onSubmitted: (value) {
+                homeController.searchSymbols(value);
+              },
+            ),
+          ),
+          Expanded(
+            child: Obx(() {
+              if (homeController.isLoading.value) {
+                return Center(child: CircularProgressIndicator());
+              } else {
+                List<Stock> stocksToDisplay = homeController.searchResults.isEmpty
+                    ? homeController.savedStocks
+                    : homeController.searchResults;
+                return ListView.builder(
+                  itemCount: stocksToDisplay.length,
+                  itemBuilder: (context, index) {
+                    var stock = stocksToDisplay[index];
+                    return StockCard(
+                      stock: stock,
+                      onAdd: () => homeController.addToSavedStocks(stock),
+                      isInWatchlist: homeController.savedStocks.contains(stock),
+                    );
+                  },
+                );
+              }
+            }),
+          ),
         ],
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
       ),
     );
   }
 }
+
+class StockCard extends StatelessWidget {
+  final Stock stock;
+  final VoidCallback onAdd;
+  final bool isInWatchlist;
+
+  const StockCard({
+    Key? key,
+    required this.stock,
+    required this.onAdd,
+    required this.isInWatchlist,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 5,
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        title: Text(
+          stock.name,
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(stock.symbol),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '\$${stock.price}',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.green,
+              ),
+            ),
+            SizedBox(width: 10),
+            ElevatedButton(
+              child: Text(isInWatchlist ? 'Added' : 'Add', style: TextStyle(color: Colors.white)),
+              onPressed: isInWatchlist ? null : onAdd,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isInWatchlist ? Colors.grey : Colors.blue[800],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+} 
