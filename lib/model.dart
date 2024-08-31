@@ -11,7 +11,7 @@ class Stock extends HiveObject {
   final String name;
 
   @HiveField(2)
-  final String price;
+  String price;
 
   Stock({required this.symbol, required this.name, required this.price});
 
@@ -30,4 +30,14 @@ class Stock extends HiveObject {
       '5. price': price,
     };
   }
-}
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Stock &&
+          runtimeType == other.runtimeType &&
+          symbol == other.symbol;
+
+  @override
+  int get hashCode => symbol.hashCode;
+}  

@@ -18,7 +18,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-       title: 'Professional Stock App',
+      title: 'Professional Stock App',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
@@ -34,7 +34,7 @@ class MainPage extends StatelessWidget {
 
   final List<Widget> _pages = [
     HomePage(),
-    AllStocksPage(), 
+    AllStocksPage(),
   ];
 
   @override
@@ -46,11 +46,11 @@ class MainPage extends StatelessWidget {
         onTap: (index) => _selectedIndex.value = index,
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'All Stocks'),
+          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'Watchlist'),
         ],
         selectedItemColor: Colors.blue[800],
         unselectedItemColor: Colors.grey,
       )),
     );
   }
-}
+} 

@@ -68,53 +68,31 @@ class HomePage extends StatelessWidget {
             child: Obx(() {
               if (homeController.isLoading.value) {
                 return Center(child: CircularProgressIndicator());
+              } else if (homeController.isSearching.value && homeController.searchResults.isEmpty) {
+                return Center(child: Text('No stocks found.'));
+              } else if (homeController.isSearching.value) {
+                return ListView.builder(
+                  itemCount: homeController.searchResults.length,
+                  itemBuilder: (context, index) {
+                    var stock = homeController.searchResults[index];
+                    return StockCard(
+                      stock: stock,
+                      onAdd: () => homeController.addToSavedStocks(stock),
+                      isInWatchlist: homeController.savedStocks.contains(stock),
+                    );
+                  },
+                );
               } else {
-                return Column(
-                  children: [
-                    if (homeController.isSearching.value)
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: homeController.searchResults.length,
-                          itemBuilder: (context, index) {
-                            var stock = homeController.searchResults[index];
-                            return StockCard(
-                              stock: stock,
-                              onAdd: () => homeController.addToSavedStocks(stock),
-                              isInWatchlist: homeController.savedStocks.contains(stock),
-                            );
-                          },
-                        ),
-                      ),
-                    if (!homeController.isSearching.value || homeController.savedStocks.isNotEmpty)
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Text(
-                                'Your Stocks',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                            ),
-                            Expanded(
-                              child: ListView.builder(
-                                itemCount: homeController.savedStocks.length,
-                                itemBuilder: (context, index) {
-                                  var stock = homeController.savedStocks[index];
-                                  return StockCard(
-                                    stock: stock,
-                                    onAdd: () {}, // Already in watchlist
-                                    isInWatchlist: true,
-                                    onRemove: () => homeController.removeStock(index),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
+                return ListView.builder(
+                  itemCount: homeController.allStocks.length,
+                  itemBuilder: (context, index) {
+                    var stock = homeController.allStocks[index];
+                    return StockCard(
+                      stock: stock,
+                      onAdd: () => homeController.addToSavedStocks(stock),
+                      isInWatchlist: homeController.savedStocks.contains(stock),
+                    );
+                  },
                 );
               }
             }),
@@ -128,14 +106,12 @@ class HomePage extends StatelessWidget {
 class StockCard extends StatelessWidget {
   final Stock stock;
   final VoidCallback onAdd;
-  final VoidCallback? onRemove;
   final bool isInWatchlist;
 
   const StockCard({
     Key? key,
     required this.stock,
     required this.onAdd,
-    this.onRemove,
     required this.isInWatchlist,
   }) : super(key: key);
 
@@ -156,7 +132,7 @@ class StockCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '\$${stock.price}',
+              '\$${double.parse(stock.price).toStringAsFixed(2)}',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -164,31 +140,19 @@ class StockCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: 10),
-            if (isInWatchlist && onRemove != null)
-              ElevatedButton(
-                child: Text('Remove', style: TextStyle(color: Colors.white)),
-                onPressed: onRemove,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                ),
-              )
-            else
-              ElevatedButton(
-                child: Text(isInWatchlist ? 'Added' : 'Add', style: TextStyle(color: Colors.white)),
-                onPressed: isInWatchlist ? null : onAdd,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isInWatchlist ? Colors.grey : Colors.blue[800],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
+            ElevatedButton(
+              child: Text(isInWatchlist ? 'Added' : 'Add', style: TextStyle(color: Colors.white)),
+              onPressed: isInWatchlist ? null : onAdd,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isInWatchlist ? Colors.grey : Colors.blue[800],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
                 ),
               ),
+            ),
           ],
         ),
       ),
     );
   }
-}  
+} 

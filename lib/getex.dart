@@ -8,29 +8,38 @@ import 'dart:convert';
 class HomeController extends GetxController {
   final searchResults = <Stock>[].obs;
   final savedStocks = <Stock>[].obs;
+  final allStocks = <Stock>[].obs;
   final isLoading = false.obs;
-  final isSearching = false.obs;  // Added this line
+  final isSearching = false.obs;
 
   @override
   void onInit() {
     super.onInit();
     loadSavedStocks();
+    fetchAllStocks();
   }
 
   void searchSymbols(String query) async {
-    if (query.isEmpty) return;
-    
+    if (query.isEmpty) {
+      cancelSearch();
+      return;
+    }
+
     isLoading.value = true;
-    isSearching.value = true;  // Added this line
-    
+    isSearching.value = true;
+
     final url = 'https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=$query&apikey=$apiKey';
-    
+
     try {
       final response = await http.get(Uri.parse(url));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final List<dynamic> matches = data['bestMatches'];
-        searchResults.value = matches.map((match) => Stock.fromJson(match)).toList();
+        searchResults.value = await Future.wait(matches.map((match) async {
+          Stock stock = Stock.fromJson(match);
+          await fetchStockPrice(stock);
+          return stock;
+        }));
       } else {
         throw Exception('Failed to load search results');
       }
@@ -42,7 +51,24 @@ class HomeController extends GetxController {
     }
   }
 
-  void cancelSearch() {  // Added this method
+  Future<void> fetchStockPrice(Stock stock) async {
+    final url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${stock.symbol}&apikey=$apiKey';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final quote = data['Global Quote'];
+        if (quote != null && quote['05. price'] != null) {
+          stock.price = quote['05. price'];
+        }
+      }
+    } catch (e) {
+      print('Error fetching stock price: $e');
+    }
+  }
+
+  void cancelSearch() {
     isSearching.value = false;
     searchResults.clear();
   }
@@ -70,8 +96,38 @@ class HomeController extends GetxController {
 
   Future<void> saveStocksToHive() async {
     final box = await Hive.openBox<Stock>('stocks');
-    
+
     await box.clear();
     await box.addAll(savedStocks);
   }
-}  
+
+  Future<void> fetchAllStocks() async {
+    isLoading.value = true;
+
+    final url = 'https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=IBM&apikey=$apiKey';
+
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final timeSeries = data['Time Series (Daily)'] as Map<String, dynamic>;
+        
+        allStocks.clear();
+        timeSeries.forEach((date, values) {
+          allStocks.add(Stock(
+            symbol: 'IBM',
+            name: 'International Business Machines',
+            price: values['4. close'],
+          ));
+        });
+      } else {
+        throw Exception('Failed to load stocks');
+      }
+    } catch (e) {
+      print('Error fetching stocks: $e');
+      Get.snackbar('Error', 'Failed to fetch stocks');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+}
