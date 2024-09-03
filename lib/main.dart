@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:stock_list/home.dart';
-import 'package:stock_list/model.dart';
-import 'package:stock_list/watchlist.dart';
+import 'package:stock_list/screen/home/home.dart';
+import 'package:stock_list/model/model.dart';
+import 'package:stock_list/screen/stock/watchlist.dart';
 
 void main() async {
   await Hive.initFlutter();

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:stock_list/getex.dart';
-import 'package:stock_list/model.dart';
+import 'package:stock_list/repository/getex.dart';
+import 'package:stock_list/model/model.dart';
 
 class HomePage extends StatelessWidget {
   final HomeController homeController = Get.put(HomeController());
@@ -138,13 +138,13 @@ class StockCard extends StatelessWidget {
                 fontWeight: FontWeight.bold,
                 color: Colors.green,
               ),
-            ),
+            ), 
             SizedBox(width: 10),
             ElevatedButton(
-              child: Text(isInWatchlist ? 'Added' : 'Add', style: TextStyle(color: Colors.white)),
-              onPressed: isInWatchlist ? null : onAdd,
+              child: Text('Add', style: TextStyle(color: const Color.fromARGB(255, 255, 255, 255))), 
+              onPressed:  onAdd,
               style: ElevatedButton.styleFrom(
-                backgroundColor: isInWatchlist ? Colors.grey : Colors.blue[800],
+                backgroundColor:  Color.fromARGB(255, 0, 119, 255), 
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),

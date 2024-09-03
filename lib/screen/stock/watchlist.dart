@@ -1,6 +1,7 @@
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:stock_list/getex.dart';
+import 'package:stock_list/repository/getex.dart';
 
 class AllStocksPage extends StatelessWidget {
   final HomeController homeController = Get.find<HomeController>();
@@ -155,3 +156,4 @@ class AllStocksPage extends StatelessWidget {
     );
   }
 }
+  

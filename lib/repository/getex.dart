@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
-import 'package:stock_list/api.dart';
-import 'package:stock_list/model.dart';
+import 'package:stock_list/repository/api.dart';
+import 'package:stock_list/model/model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -130,4 +130,4 @@ class HomeController extends GetxController {
       isLoading.value = false;
     }
   }
-}
+} 
